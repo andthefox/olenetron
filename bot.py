@@ -19,7 +19,7 @@ async def nine_nine(ctx):
     await ctx.send(response)
 
 
-@bot.command(name='кости', help='Кинуть кости')
+@bot.command(name='кости' or 'roll', help='Кинуть кости (!кости <кол-во костей> <кол-во сторон> ')
 async def roll(ctx, number_of_dice: int, number_of_sides: int):
     dice = [
         str(random.choice(range(1, number_of_sides + 1)))
