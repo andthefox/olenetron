@@ -21,16 +21,20 @@ async def on_ready():
 
 
 @bot.command(name='хелп')
-async def custom_help(ctx):
+async def custom_help(ctx, command=''):
     embed = discord.Embed(
         colour=discord.Colour.green()
     )
+    # I was to lazy to write an array
+    # commands = [
+    #    '!хелп'
+    # ]
+    if command == '':
+        embed.add_field(name='!хелп', value='Выводит доступные команды', inline=False)
+        embed.add_field(name='!олень', value='Только попробуй назвать его оленем!', inline=False)
+        embed.add_field(name='!кинь', value='!кинь <кол-во сторон> [кол-во костей]', inline=False)
 
-    embed.add_field(name='!хелп', value='Выводит доступные команды', inline=False)
-    embed.add_field(name='!олень', value='Только попробуй назвать его оленем!', inline=False)
-    embed.add_field(name='!кинь', value='!кинь <кол-во сторон> [кол-во костей]', inline=False)
-
-    await ctx.send('Команды', embed=embed)
+        await ctx.send('Команды', embed=embed)
 
 
 @bot.command(name='олень')
@@ -40,12 +44,13 @@ async def deer(ctx):
 
 
 @bot.command(name='кинь')
-async def roll(ctx, number_of_sides: int, number_of_dice: int = 1):
-    dice = [
-        str(random.choice(range(1, number_of_sides + 1)))
-        for _ in range(number_of_dice)
-    ]
-    await ctx.send(', '.join(dice))
+async def roll(ctx, number_of_sides: int = 20, number_of_dice: int = 1):
+    if 1 < number_of_sides <= 100 and 0 < number_of_dice <= 50:
+        dice = [
+            str(random.choice(range(1, number_of_sides + 1)))
+            for _ in range(number_of_dice)
+        ]
+        await ctx.send(', '.join(dice))
 
 
 # @bot.command(name='create-channel')
