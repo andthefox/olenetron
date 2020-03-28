@@ -29,10 +29,13 @@ async def custom_help_command(ctx):
     )
 
     embed.set_author(name='Команды оленя:')
+
     embed.add_field(name='!?', value='Выводит доступные команды', inline=True)
     embed.add_field(name='!олень', value='Только попробуй назвать его оленем!', inline=True)
-    embed.add_field(name='!кости', value='Кинуть кости (!кости <кол-во сторон> <не обязательно: кол-во костей>', inline=True)
-    await ctx.send_message(author, embed=embed)
+    embed.add_field(name='!кости', value='Кинуть кости (!кости <кол-во сторон> <не обязательно: кол-во костей>',\
+                    inline=True)
+
+    await bot.send_message(author, embed=embed)
 
 
 @bot.command(name='олень')
