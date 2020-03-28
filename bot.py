@@ -20,22 +20,17 @@ async def on_ready():
     print('Bot is ready.')
 
 
-@bot.command(name='?')
-async def custom_help_command(ctx):
-    author = ctx.message.author
-
+@bot.command(name='хелп')
+async def custom_help(ctx):
     embed = discord.Embed(
         colour=discord.Colour.green()
     )
 
-    embed.set_author(name='Команды оленя:')
+    embed.add_field(name='!хелп', value='Выводит доступные команды', inline=False)
+    embed.add_field(name='!олень', value='Только попробуй назвать его оленем!', inline=False)
+    embed.add_field(name='!кинь', value='!кинь <кол-во сторон> [кол-во костей]', inline=False)
 
-    embed.add_field(name='!?', value='Выводит доступные команды', inline=True)
-    embed.add_field(name='!олень', value='Только попробуй назвать его оленем!', inline=True)
-    embed.add_field(name='!кости', value='Кинуть кости (!кости <кол-во сторон> <не обязательно: кол-во костей>',\
-                    inline=True)
-
-    await bot.send_message(author, embed=embed)
+    await ctx.send('Команды', embed=embed)
 
 
 @bot.command(name='олень')
@@ -44,7 +39,7 @@ async def deer(ctx):
     await ctx.send(response)
 
 
-@bot.command(name='кости')
+@bot.command(name='кинь')
 async def roll(ctx, number_of_sides: int, number_of_dice: int = 1):
     dice = [
         str(random.choice(range(1, number_of_sides + 1)))
