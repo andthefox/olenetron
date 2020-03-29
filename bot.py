@@ -24,29 +24,34 @@ async def on_ready():
     print('Bot is ready.')
 
 
-@bot.command(name='хелп')
+@bot.command(name='помощь')
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
         colour=discord.Colour.green()
     )
 
     coms = {
-        'хелп': 'Выводит доступные команды',
-        'олень': 'Только попробуй назвать его оленем!',
-        'кинь': '!кинь <кол-во сторон> [кол-во костей]'
+        'помощь': [' 💁‍♂️ Выводит доступные команды или подробную информацию о команде', 'Выводит доступные команды или \
+        подробную информацию о команде'],
+        'кинь': [' 🎲 Кидает кубики', 'Кинуть кубики *x* сторон *y* раз'],
+        'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
+        'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
+        'олень': [' 🦌 Только попробуй назвать его оленем!', 'Он вам не олень!'],
     }
 
     if command == '':
+        embed.set_author(name='Команды бота 🛠')
         for key in coms:
             value = coms[key]
-            embed.add_field(name='!'+key, value=value, inline=False)
+            embed.add_field(name='!'+key, value=value[0], inline=False)
     else:
+        embed.set_author(name='Поиск по команде 🔎')
         if command in coms:
-            embed.add_field(name='!' + command, value=coms[command], inline=False)
+            embed.add_field(name='!' + command, value=coms[command][1], inline=False)
         else:
-            embed.add_field(name='!' + command, value='Нет такой команды :(', inline=False)
+            embed.add_field(name='!' + command, value='Нет такой команды 🤷‍♂️', inline=False)
 
-    await ctx.send('Команды бота:', embed=embed)
+    await ctx.send('', embed=embed)
 
 
 @bot.command(name='олень')
@@ -62,15 +67,11 @@ async def roll(ctx, number_of_sides: int = 20, number_of_dice: int = 1):
             '**' + str(random.choice(range(1, number_of_sides + 1))) + '**'
             for _ in range(number_of_dice)
         ]
-        await ctx.send('Выпало {0} кубов по {1}: \n'.format(number_of_dice, number_of_sides) + ', '.join(dice))
+        name = ctx.message.author.name
+        await ctx.send(name + ' кидает кубики 🎲🎲 \nВыпало {0}x{1}:\
+         \n'.format(number_of_dice, number_of_sides) + ', '.join(dice))
     else:
-        await ctx.send('Не кину :(')
-
-
-@bot.command(name='время')
-async def deer(ctx):
-    dt = Delorean()
-    await ctx.send(dt.datetime.strftime("%d.%m.%Y %H:%m:%S"))
+        await ctx.send('Не кину 😕')
 
 
 @bot.command(name='старт')
@@ -79,10 +80,10 @@ async def deer(ctx):
     name = ctx.message.author.name
 
     if name in time_var:
-        response = name + ', часики уже тикают!'
+        response = name + ', часики уже тикают! ⏲'
     else:
         time_var[name] = dt.epoch
-        response = name + ', поехали!'
+        response = name + ', поехали! 💨'
     await ctx.send(response)
 
 
@@ -95,9 +96,9 @@ async def deer(ctx):
         dts = time_var.pop(name)
         r = dte.epoch - dts
         rr = epoch(r)
-        response = name + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S")
+        response = name + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S") + ' 🏁'
     else:
-        response = 'Старта не было :)'
+        response = 'Старта не было 😒'
 
     await ctx.send(response)
 
