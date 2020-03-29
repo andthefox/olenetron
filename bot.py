@@ -77,8 +77,12 @@ async def deer(ctx):
 async def deer(ctx):
     dt = Delorean()
     name = ctx.message.author.name
-    time_var[name] = dt.epoch
-    response = str(name) + ', поехали!'
+
+    if name in time_var:
+        response = name + ', часики уже тикают!'
+    else:
+        time_var[name] = dt.epoch
+        response = name + ', поехали!'
     await ctx.send(response)
 
 
@@ -91,7 +95,7 @@ async def deer(ctx):
         dts = time_var.pop(name)
         r = dte.epoch - dts
         rr = epoch(r)
-        response = str(name) + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S")
+        response = name + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S")
     else:
         response = 'Старта не было :)'
 
