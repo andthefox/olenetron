@@ -2,6 +2,7 @@
 
 import os
 import random
+import asyncio
 import discord
 import wget
 
@@ -24,19 +25,18 @@ async def on_ready():
     print('Bot is ready.')
 
 
-@bot.command(name='помощь')
+@bot.command(name='как')
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
         colour=discord.Colour.green()
     )
 
     coms = {
-        'помощь': [' 💁‍♂️ Выводит доступные команды или подробную информацию о команде', 'Выводит доступные команды или \
+        'как': [' 🦌 Выводит доступные команды или подробную информацию о команде', 'Выводит доступные команды или \
         подробную информацию о команде'],
         'кинь': [' 🎲 Кидает кубики', 'Кинуть кубики *x* сторон *y* раз'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
         'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
-        'олень': [' 🦌 Только попробуй назвать его оленем!', 'Он вам не олень!'],
     }
 
     if command == '':
@@ -44,6 +44,7 @@ async def custom_help(ctx, command=''):
         for key in coms:
             value = coms[key]
             embed.add_field(name='!'+key, value=value[0], inline=False)
+        embed.add_field(name='---', value='Кстати, боту можно писать и напрямую 😎', inline=False)
     else:
         embed.set_author(name='Поиск по команде 🔎')
         if command in coms:
@@ -52,12 +53,6 @@ async def custom_help(ctx, command=''):
             embed.add_field(name='!' + command, value='Нет такой команды 🤷‍♂️', inline=False)
 
     await ctx.send('', embed=embed)
-
-
-@bot.command(name='олень')
-async def deer(ctx):
-    response = 'Сам олень!'
-    await ctx.send(response)
 
 
 @bot.command(name='кинь')
@@ -104,6 +99,10 @@ async def deer(ctx):
 
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
+
+
+# @bot.loop()
+# async def my_background_task(self):
 
 
 @bot.event
