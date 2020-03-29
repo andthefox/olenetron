@@ -68,7 +68,7 @@ async def roll(ctx, number_of_sides: int = 20, number_of_dice: int = 1):
             for _ in range(number_of_dice)
         ]
         name = ctx.message.author.name
-        await ctx.send(name + ' кидает кубики 🎲🎲 \nВыпало {0}x{1}:\
+        await ctx.send(name + ' кидает кубики ({0}x{1}) 🎲🎲 \nВыпало:\
          \n'.format(number_of_dice, number_of_sides) + ', '.join(dice))
     else:
         await ctx.send('Не кину 😕')
