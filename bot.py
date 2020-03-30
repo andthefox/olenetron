@@ -54,6 +54,18 @@ async def custom_help(ctx, command=''):
     await ctx.send('', embed=embed)
 
 
+async def translate(ctx, sub_: str):
+    if sub_:
+        layout = dict(zip(map(ord, "qwertyuiop[]asdfghjkl;'zxcvbnm,./`"
+                                   'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'),
+                          "йцукенгшщзхъфывапролджэячсмитьбю.ё"
+                          'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'))
+        await ctx.message.edit(delete_after=0)
+        await ctx.send(ctx.message.author.name + ', перевожу: \n`' + sub_ + ' -> ' + sub_.translate(layout) + '`')
+    else:
+        await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
+
+
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Game(name=STATUS))
@@ -63,6 +75,11 @@ async def on_ready():
 @bot.command(name='как')
 async def run_help(ctx, command=''):
     await custom_help(ctx, command)
+
+
+@bot.command(name='переведи')
+async def run_translate(ctx, sub_):
+    await translate(ctx, sub_)
 
 
 @bot.command(name='кинь')
@@ -95,17 +112,23 @@ async def start(ctx):
 @bot.command(name='олень')
 async def deer(ctx, sub: str = '', sub_: str = ''):
     if sub == 'деградни':
-        if sub_ == '' or sub_ == 'средне':
-            text = 'ыыыыыыыыыы'
-        elif sub_ == 'легонько':
-            text = 'ыыы'
-        elif sub_ == 'сильно':
-            text = 'Я роняю запад, У!'
-        elif sub_ == 'максимально':
-            text = 'Тёмная тема Вконтакте топ'
-        await ctx.send(text)
-    else:
+        text = {
+            'легонько': 'ыыы',
+            'средне': 'ыыыыыыыыыы',
+            'сильно': 'Я роняю запад, У!',
+            'максимально': 'Тёмная тема Вконтакте топ'
+        }
+        if sub_:
+            await ctx.send(text[sub_])
+        else:
+            msg = await ctx.send('https://media.giphy.com/media/XbLeWvIwOcd2g/source.gif')
+            await ctx.message.edit(delete_after=0)
+    elif sub == 'переведи':
+        await translate(ctx, sub_)
+    elif sub == '':
         await custom_help(ctx, sub_)
+    else:
+        await ctx.send('https://media.giphy.com/media/Qld1cd6a6QlWw/source.gif')
 
 
 @bot.command(name='стоп')
@@ -122,6 +145,7 @@ async def stop(ctx):
         response = 'Старта не было 😒'
 
     await ctx.send(response)
+
 
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
