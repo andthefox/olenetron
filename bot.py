@@ -125,8 +125,11 @@ async def deer(ctx, sub: str = '', sub_: str = ''):
             await ctx.message.edit(delete_after=0)
     elif sub == 'переведи':
         await translate(ctx, sub_)
-    elif sub == '':
-        await custom_help(ctx, sub_)
+    elif sub == 'как':
+        if sub_ == 'посрал':
+            await ctx.send('нормально 💩')
+        else:
+            await custom_help(ctx, sub_)
     else:
         await ctx.send('https://media.giphy.com/media/Qld1cd6a6QlWw/source.gif')
 
