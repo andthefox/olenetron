@@ -31,7 +31,7 @@ async def custom_help(ctx, command=''):
         'как': [' 🦌 Выводит доступные команды или подробную информацию о команде', 'Выводит доступные команды или \
         подробную информацию о команде'],
         'кинь': [' 🎲 Кидает кубики', 'Кинуть кубики *x* сторон *y* раз'],
-        'переведи': [' 🅰 Перевод раскладки текста', 'Переводит текст из английской в русскую раскладку'],
+        'переведи': [' 🔄 Перевод раскладки текста', 'Переводит текст в нужную раскладку'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
         'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
     }
@@ -56,12 +56,27 @@ async def custom_help(ctx, command=''):
 
 
 async def translate(ctx, sub_: str):
+    symbols_en = "qwertyuiop[]asdfghjkl;'zxcvbnm,./`"\
+                 'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'
+
+    symbols_ru = "йцукенгшщзхъфывапролджэячсмитьбю.ё"\
+                 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'
+    en = 0
+    ru = 0
+
     if sub_:
-        layout = dict(zip(map(ord, "qwertyuiop[]asdfghjkl;'zxcvbnm,./`"
-                                   'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'),
-                          "йцукенгшщзхъфывапролджэячсмитьбю.ё"
-                          'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'))
-        await ctx.send(ctx.message.author.name + ', перевожу: \n`' + sub_ + ' -> ' + sub_.translate(layout) + '`')
+        for k in range(len(sub_)):
+            if sub_[k] in symbols_en:
+                en += 1
+            if sub_[k] in symbols_ru:
+                ru += 1
+
+        if en > ru:
+            layout = dict(zip(map(ord, symbols_en), symbols_ru))
+        else:
+            layout = dict(zip(map(ord, symbols_ru), symbols_en))
+
+        await ctx.send(ctx.message.author.name + ', перевожу: \n```' + sub_ + ' -> ' + sub_.translate(layout) + '```')
     else:
         await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
 
@@ -97,16 +112,83 @@ async def roll(ctx, number_of_sides: int = 20, number_of_dice: int = 1):
 
 
 @bot.command(name='старт')
-async def start(ctx):
+async def start_counter(ctx):
     dt = Delorean()
-    name = ctx.message.author.name
-
-    if name in time_var:
-        response = name + ', часики уже тикают! ⏲'
+    name = ctx.author.name
+    if ctx.guild:
+        guild = str(ctx.guild.id)
     else:
-        time_var[name] = dt.epoch
-        response = name + ', поехали! 💨'
+        guild = 'noguild'
+
+    ident = str(name+'@'+guild)
+
+    out = [', поехали! 💨', ', часики уже тикают! ⏲']
+
+    if ident in time_var:
+        response = name + out[1]
+    else:
+        time_var[ident] = dt.epoch
+        response = name + out[0]
+
     await ctx.send(response)
+
+
+@bot.command(name='стоп')
+async def stop_counter(ctx):
+    dte = Delorean()
+    name = ctx.author.name
+    if ctx.guild:
+        guild = str(ctx.guild.id)
+    else:
+        guild = 'noguild'
+    ident = str(name + '@' + guild)
+
+    if ident in time_var:
+        dts = time_var.pop(ident)
+        r = dte.epoch - dts
+        rr = epoch(r)
+        response = name + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S") + ' 🏁'
+    else:
+        response = 'Старта не было 😒'
+
+    await ctx.send(response)
+
+
+@bot.command(name='таймер')
+async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
+    async def timer_start():
+        dfn_transpose = {
+            'мин': 60,
+            'сек': 1,
+            'час': 3600
+        }
+        value = val * dfn_transpose[dfn]
+
+        response = 'таймер запущен на ' + str(val) + ' ' + dfn + ' (' + str(value) + ' секунд)'
+        print(response)
+        await ctx.send(response)
+        msg = await ctx.send('Осталось ...')
+
+    async def timer_pause():
+        response = 'таймер приостановлен'
+        await ctx.send(response)
+
+    async def timer_stop():
+        response = 'таймер остановлен'
+        await ctx.send(response)
+
+    async def do_default():
+        response = '`старт`, `стоп`, `пауза` для таймера'
+        await ctx.send(response)
+
+    action = {
+        '': do_default,
+        'старт': timer_start,
+        'стоп': timer_stop,
+        'пауза': timer_pause
+    }
+
+    return await action[funx]()
 
 
 @bot.command(name='олень')
@@ -127,27 +209,15 @@ async def deer(ctx, sub: str = '', sub_: str = ''):
         await translate(ctx, sub_)
     elif sub == 'как':
         if sub_ == 'посрал':
-            await ctx.send('нормально 💩')
+            return await ctx.send('нормально 💩')
+        if sub_ == 'сам':
+            return await ctx.send('Всё путём 👍')
         else:
-            await custom_help(ctx, sub_)
+            return await custom_help(ctx, sub_)
+    elif sub == '':
+        return await custom_help(ctx, sub_)
     else:
-        await ctx.send('https://media.giphy.com/media/Qld1cd6a6QlWw/source.gif')
-
-
-@bot.command(name='стоп')
-async def stop(ctx):
-    dte = Delorean()
-    name = ctx.message.author.name
-
-    if name in time_var:
-        dts = time_var.pop(name)
-        r = dte.epoch - dts
-        rr = epoch(r)
-        response = name + ', твоё время: ' + rr.datetime.strftime("%H:%M:%S") + ' 🏁'
-    else:
-        response = 'Старта не было 😒'
-
-    await ctx.send(response)
+        return await ctx.send('https://media.giphy.com/media/Qld1cd6a6QlWw/source.gif')
 
 
 # @bot.command(name='create-channel')
