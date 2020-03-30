@@ -1,4 +1,5 @@
 #bot.py
+# -*- coding: utf-8 -*-
 
 import os
 import random
@@ -13,6 +14,7 @@ from delorean import epoch
 
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
+STATUS = '🦌 | !как'
 
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
@@ -20,12 +22,6 @@ bot.remove_command('help')
 time_var = {}
 
 
-@bot.event
-async def on_ready():
-    print('Bot is ready.')
-
-
-@bot.command(name='как')
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
         colour=discord.Colour.green()
@@ -45,6 +41,9 @@ async def custom_help(ctx, command=''):
             value = coms[key]
             embed.add_field(name='!'+key, value=value[0], inline=False)
         embed.add_field(name='---', value='Кстати, боту можно писать и напрямую 😎', inline=False)
+    elif command == 'какоть' or command == 'какать':
+        kak_kakat = '🧻 **Я ВАМ ЗАПРЕЩАЮ** \n\t`срать`*!*'
+        return await ctx.send(kak_kakat)
     else:
         embed.set_author(name='Поиск по команде 🔎')
         if command in coms:
@@ -53,6 +52,17 @@ async def custom_help(ctx, command=''):
             embed.add_field(name='!' + command, value='Нет такой команды 🤷‍♂️', inline=False)
 
     await ctx.send('', embed=embed)
+
+
+@bot.event
+async def on_ready():
+    await bot.change_presence(activity=discord.Game(name=STATUS))
+    print(bot.user.name + ' is ready.')
+
+
+@bot.command(name='как')
+async def run_help(ctx, command=''):
+    await custom_help(ctx, command)
 
 
 @bot.command(name='кинь')
@@ -70,7 +80,7 @@ async def roll(ctx, number_of_sides: int = 20, number_of_dice: int = 1):
 
 
 @bot.command(name='старт')
-async def deer(ctx):
+async def start(ctx):
     dt = Delorean()
     name = ctx.message.author.name
 
@@ -82,8 +92,24 @@ async def deer(ctx):
     await ctx.send(response)
 
 
+@bot.command(name='олень')
+async def deer(ctx, sub: str = '', sub_: str = ''):
+    if sub == 'деградни':
+        if sub_ == '' or sub_ == 'средне':
+            text = 'ыыыыыыыыыы'
+        elif sub_ == 'легонько':
+            text = 'ыыы'
+        elif sub_ == 'сильно':
+            text = 'Я роняю запад, У!'
+        elif sub_ == 'максимально':
+            text = 'Тёмная тема Вконтакте топ'
+        await ctx.send(text)
+    else:
+        await custom_help(ctx, sub_)
+
+
 @bot.command(name='стоп')
-async def deer(ctx):
+async def stop(ctx):
     dte = Delorean()
     name = ctx.message.author.name
 
