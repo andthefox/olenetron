@@ -60,7 +60,6 @@ async def translate(ctx, sub_: str):
                                    'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'),
                           "йцукенгшщзхъфывапролджэячсмитьбю.ё"
                           'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'))
-        await ctx.message.edit(delete_after=0)
         await ctx.send(ctx.message.author.name + ', перевожу: \n`' + sub_ + ' -> ' + sub_.translate(layout) + '`')
     else:
         await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
@@ -78,7 +77,7 @@ async def run_help(ctx, command=''):
 
 
 @bot.command(name='переведи')
-async def run_translate(ctx, sub_):
+async def run_translate(ctx, sub_: str = ''):
     await translate(ctx, sub_)
 
 
