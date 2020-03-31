@@ -20,7 +20,7 @@ bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
 time_var = {}
-
+timer_run = {}
 
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
@@ -34,6 +34,7 @@ async def custom_help(ctx, command=''):
         'переведи': [' 🔄 Перевод раскладки текста', 'Переводит текст в нужную раскладку'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
         'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
+        'таймер': [' ⏳ Запускает таймер', 'таймер `старт <число> <сек|мин|час>`']
     }
 
     if command == '':
@@ -156,6 +157,13 @@ async def stop_counter(ctx):
 
 @bot.command(name='таймер')
 async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
+    name = ctx.author.name
+    if ctx.guild:
+        guild = str(ctx.guild.id)
+    else:
+        guild = 'noguild'
+    ident = str(name + '@' + guild)
+
     async def timer_start():
         dfn_transpose = {
             'мин': 60,
@@ -164,31 +172,37 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
         }
         value = val * dfn_transpose[dfn]
 
-        response = 'таймер запущен на ' + str(val) + ' ' + dfn + ' (' + str(value) + ' секунд)'
-        print(response)
-        await ctx.send(response)
-        msg = await ctx.send('Осталось ...')
-
-    async def timer_pause():
-        response = 'таймер приостановлен'
-        await ctx.send(response)
-
-    async def timer_stop():
-        response = 'таймер остановлен'
-        await ctx.send(response)
+        if ident not in timer_run:
+            response = '⏳ таймер запущен на ' + str(val) + ' ' + dfn + '. (' + str(value) + ' секунд)'
+            await ctx.send(response)
+            msg = await ctx.send('Осталось ...')
+            bot.loop.create_task(timer_routine(ctx, value, msg, ident))
+            timer_run[ident] = True
+        else:
+            await ctx.send(content='⏳ таймер уже запущен')
 
     async def do_default():
-        response = '`старт`, `стоп`, `пауза` для таймера'
+        response = 'таймер `старт <число> <сек|мин|час>`'
         await ctx.send(response)
 
     action = {
         '': do_default,
         'старт': timer_start,
-        'стоп': timer_stop,
-        'пауза': timer_pause
     }
 
     return await action[funx]()
+
+
+async def timer_routine(ctx, timer_var, message, idd):
+    await bot.wait_until_ready()
+
+    while not bot.is_closed() and timer_var > 0:
+        timer_var -= 1
+        await message.edit(content='Осталось ' + str(timer_var))
+        await asyncio.sleep(1)
+    timer_run.pop(idd)
+    await message.delete()
+    await ctx.send(ctx.author.name + ', таймер завершил отсчет!', tts=True)
 
 
 @bot.command(name='олень')
