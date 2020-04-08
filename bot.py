@@ -34,7 +34,8 @@ async def custom_help(ctx, command=''):
         'переведи': [' 🔄 Перевод раскладки текста', 'Переводит текст в нужную раскладку'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
         'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
-        'таймер': [' ⏳ Запускает таймер', 'таймер `старт <число> <сек|мин|час>`']
+        'таймер': [' ⏳ Запускает таймер', 'таймер `старт <число> <сек|мин|час>`, `стоп`'],
+        'пинг': ['🏓 Задержка бота', 'Время задержки ответа бота в миллисекундах']
     }
 
     if command == '':
@@ -43,9 +44,6 @@ async def custom_help(ctx, command=''):
             value = coms[key]
             embed.add_field(name='!'+key, value=value[0], inline=False)
         embed.add_field(name='---', value='Кстати, боту можно писать и напрямую 😎', inline=False)
-    elif command == 'какоть' or command == 'какать':
-        kak_kakat = '🧻 **Я ВАМ ЗАПРЕЩАЮ** \n\t`срать`*!*'
-        return await ctx.send(kak_kakat)
     else:
         embed.set_author(name='Поиск по команде 🔎')
         if command in coms:
@@ -77,7 +75,7 @@ async def translate(ctx, sub_: str):
         else:
             layout = dict(zip(map(ord, symbols_ru), symbols_en))
 
-        await ctx.send(ctx.message.author.name + ', перевожу: \n```' + sub_ + ' -> ' + sub_.translate(layout) + '```')
+        await ctx.send('<@' + str(ctx.message.author.id) + '>' + ', перевожу: \n```' + sub_ + ' -> ' + sub_.translate(layout) + '```')
     else:
         await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
 
@@ -170,16 +168,30 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
             'сек': 1,
             'час': 3600
         }
-        value = val * dfn_transpose[dfn]
 
-        if ident not in timer_run:
-            response = '⏳ таймер запущен на ' + str(val) + ' ' + dfn + '. (' + str(value) + ' секунд)'
-            await ctx.send(response)
-            msg = await ctx.send('Осталось ...')
-            bot.loop.create_task(timer_routine(ctx, value, msg, ident))
-            timer_run[ident] = True
+        if val and dfn:
+            value = val * dfn_transpose[dfn]
         else:
-            await ctx.send(content='⏳ таймер уже запущен')
+            value = 0
+
+        if 0 < value <= 7200:
+            if ident not in timer_run:
+                response = '⏳ таймер запущен на ' + str(val) + ' ' + dfn + '. (' + str(value) + ' секунд)'
+                await ctx.send(response)
+                msg = await ctx.send('Осталось ...')
+                bot.loop.create_task(timer_routine(ctx, value, msg, ident))
+                timer_run[ident] = True
+                # https://stackoverflow.com/questions/45824314/break-loop-with-command
+            else:
+                await ctx.send(content='⏳ таймер уже запущен')
+        else:
+            await ctx.send(content='🤔 кажется, указано неверное время!')
+
+    async def timer_stop():
+        if ident in timer_run:
+            timer_run[ident] = False
+        else:
+            await ctx.send(content='Нечего останавливать 🤷‍♀️')
 
     async def do_default():
         response = 'таймер `старт <число> <сек|мин|час>`'
@@ -188,6 +200,7 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
     action = {
         '': do_default,
         'старт': timer_start,
+        'стоп': timer_stop
     }
 
     return await action[funx]()
@@ -196,43 +209,24 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
 async def timer_routine(ctx, timer_var, message, idd):
     await bot.wait_until_ready()
 
-    while not bot.is_closed() and timer_var > 0:
+    while not bot.is_closed() and not (timer_run[idd] is False or timer_var <= 0):
         timer_var -= 1
         await message.edit(content='Осталось ' + str(timer_var))
         await asyncio.sleep(1)
+
     timer_run.pop(idd)
     await message.delete()
-    await ctx.send(ctx.author.name + ', таймер завершил отсчет!', tts=True)
+    await ctx.send('<@'+str(ctx.author.id)+'>' + ', таймер завершил отсчет!')
 
 
 @bot.command(name='олень')
-async def deer(ctx, sub: str = '', sub_: str = ''):
-    if sub == 'деградни':
-        text = {
-            'легонько': 'ыыы',
-            'средне': 'ыыыыыыыыыы',
-            'сильно': 'Я роняю запад, У!',
-            'максимально': 'Тёмная тема Вконтакте топ'
-        }
-        if sub_:
-            await ctx.send(text[sub_])
-        else:
-            msg = await ctx.send('https://media.giphy.com/media/XbLeWvIwOcd2g/source.gif')
-            await ctx.message.edit(delete_after=0)
-    elif sub == 'переведи':
-        await translate(ctx, sub_)
-    elif sub == 'как':
-        if sub_ == 'посрал':
-            return await ctx.send('нормально 💩')
-        if sub_ == 'сам':
-            return await ctx.send('Всё путём 👍')
-        else:
-            return await custom_help(ctx, sub_)
-    elif sub == '':
-        return await custom_help(ctx, sub_)
-    else:
-        return await ctx.send('https://media.giphy.com/media/Qld1cd6a6QlWw/source.gif')
+async def deer(ctx):
+    return await custom_help(ctx, '')
 
+
+@bot.command(name='пинг')
+async def ping(ctx):
+    await ctx.send('🏓 Понг! {0} мс'.format(round(bot.latency*1000)))
 
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
