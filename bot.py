@@ -2,15 +2,18 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import random
 import asyncio
 import discord
 import wget
+import youtube_dl
 
 from dotenv import load_dotenv
 from discord.ext import commands
 from delorean import Delorean
 from delorean import epoch
+from datetime import timedelta
 
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
@@ -21,6 +24,7 @@ bot.remove_command('help')
 
 time_var = {}
 timer_run = {}
+voice = {}
 
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
@@ -33,7 +37,8 @@ async def custom_help(ctx, command=''):
         'кинь': [' 🎲 Кидает кубики', 'Кинуть кубики *x* сторон *y* раз'],
         'переведи': [' 🔄 Перевод раскладки текста', 'Переводит текст в нужную раскладку'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
-        'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер и показывает результат'],
+        'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер\
+         и показывает результат'],
         'таймер': [' ⏳ Запускает таймер', 'таймер `старт <число> <сек|мин|час>`, `стоп`'],
         'пинг': ['🏓 Задержка бота', 'Время задержки ответа бота в миллисекундах']
     }
@@ -75,9 +80,24 @@ async def translate(ctx, sub_: str):
         else:
             layout = dict(zip(map(ord, symbols_ru), symbols_en))
 
-        await ctx.send('<@' + str(ctx.message.author.id) + '>' + ', перевожу: \n```' + sub_ + ' -> ' + sub_.translate(layout) + '```')
+        await ctx.send('<@' + str(ctx.message.author.id) + '>' + ', перевожу: \n```' + sub_ + ' \
+        -> ' + sub_.translate(layout) + '```')
     else:
         await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
+
+
+async def timer_routine(ctx, timer_var, message, idd):
+    await bot.wait_until_ready()
+
+    while not bot.is_closed() and not (timer_run[idd] is False or timer_var <= 0):
+        timer_var -= 1
+        time_left = timedelta(seconds=timer_var)
+        await message.edit(content='Осталось ' + str(time_left))
+        await asyncio.sleep(1)
+
+    timer_run.pop(idd)
+    await message.delete()
+    await ctx.send('<@'+str(ctx.author.id)+'>' + ', таймер завершил отсчет!')
 
 
 @bot.event
@@ -206,17 +226,49 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
     return await action[funx]()
 
 
-async def timer_routine(ctx, timer_var, message, idd):
-    await bot.wait_until_ready()
+@bot.command(name='голос')
+async def join(ctx):
+    guild = str(ctx.guild.id)
+    global voice
 
-    while not bot.is_closed() and not (timer_run[idd] is False or timer_var <= 0):
-        timer_var -= 1
-        await message.edit(content='Осталось ' + str(timer_var))
-        await asyncio.sleep(1)
+    if ctx.author.voice and ctx.author.voice.channel:
+        channel = ctx.author.voice.channel
+    else:
+        return await ctx.send("Сначала нужно присоединиться к голосовому каналу!")
+    #
+    if ctx.voice_client is not None:
+        await voice[guild].move_to(channel)
+        await ctx.send('перемещен на канал {}'.format(channel))
+    else:
+        voice[guild] = await channel.connect()
+        await ctx.send('присоединен на канал {}'.format(channel))
 
-    timer_run.pop(idd)
-    await message.delete()
-    await ctx.send('<@'+str(ctx.author.id)+'>' + ', таймер завершил отсчет!')
+
+@bot.command(name='молчи')
+async def voice_leave(ctx):
+    guild = str(ctx.guild.id)
+    if voice[guild].is_connected():
+        await voice[guild].disconnect()
+
+
+@bot.command(name='играй')
+async def voice_play(ctx):
+    guild = str(ctx.guild.id)
+
+    if ctx.author.voice and ctx.author.voice.channel:
+        if ctx.voice_client is None:
+            return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
+        else:
+            await ctx.send('Проигрываю тест')
+            player = voice[guild].create_ffmpeg_player('test.mp3', after=lambda: print('done'))
+            player.start()
+            while not player.is_done():
+                await asyncio.sleep(1)
+            # disconnect after the player has finished
+            player.stop()
+            await ctx.send('Проверка звука окончена')
+    else:
+        await ctx.send('Присоединитесь к голосовому каналу')
 
 
 @bot.command(name='олень')
@@ -228,12 +280,9 @@ async def deer(ctx):
 async def ping(ctx):
     await ctx.send('🏓 Понг! {0} мс'.format(round(bot.latency*1000)))
 
+
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
-
-
-# @bot.loop()
-# async def my_background_task(self):
 
 
 @bot.event

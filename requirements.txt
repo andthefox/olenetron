@@ -1,4 +1,6 @@
 discord.py
+discord.py[voice]
 python-dotenv
 wget
 delorean
+youtube-dl
