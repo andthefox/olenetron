@@ -259,14 +259,20 @@ async def voice_play(ctx):
         if ctx.voice_client is None:
             return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
         else:
-            await ctx.send('Проигрываю тест')
+            """await ctx.send('Проигрываю тест')
             player = voice[guild].create_ffmpeg_player('test.mp3', after=lambda: print('done'))
             player.start()
             while not player.is_done():
                 await asyncio.sleep(1)
             # disconnect after the player has finished
             player.stop()
-            await ctx.send('Проверка звука окончена')
+            await ctx.send('Проверка звука окончена')"""
+
+            query = 'G:/GitHub/olenetron/test.mp3'
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+
+            await ctx.send('Now playing: {}'.format(query))
     else:
         await ctx.send('Присоединитесь к голосовому каналу')
 
