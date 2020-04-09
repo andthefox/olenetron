@@ -15,6 +15,7 @@ from delorean import Delorean
 from delorean import epoch
 from datetime import timedelta
 
+
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
 STATUS = '🦌 | !как'
@@ -320,7 +321,7 @@ async def voice_play(ctx, query: str):
 @bot.command(name='ютуб')
 async def yt(ctx, url):
     """Plays from a url (almost anything youtube_dl supports)"""
-
+    await ctx.message.delete()
     if ctx.author.voice and ctx.author.voice.channel:
         if ctx.voice_client is None:
             return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
@@ -329,7 +330,7 @@ async def yt(ctx, url):
                 player = await YTDLSource.from_url(url, loop=bot.loop)
                 ctx.voice_client.stop()
                 ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                await ctx.send('Играет: {}'.format(player.title))
+                await ctx.send('Играет: {0} ({1}'.format(player.title, url))
     else:
         await ctx.send('Присоединитесь к голосовому каналу')
 
