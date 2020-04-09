@@ -4,3 +4,4 @@ python-dotenv
 wget
 delorean
 youtube-dl
+pynacl

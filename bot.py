@@ -19,12 +19,61 @@ load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
 STATUS = '🦌 | !как'
 
+
+# Suppress noise about console usage from errors
+youtube_dl.utils.bug_reports_message = lambda: ''
+
+
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
 time_var = {}
 timer_run = {}
 voice = {}
+
 
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
@@ -234,7 +283,7 @@ async def join(ctx):
     if ctx.author.voice and ctx.author.voice.channel:
         channel = ctx.author.voice.channel
     else:
-        return await ctx.send("Сначала нужно присоединиться к голосовому каналу!")
+        return await ctx.send("Сначала вам нужно присоединиться к голосовому каналу!")
     #
     if ctx.voice_client is not None:
         await voice[guild].move_to(channel)
@@ -244,7 +293,7 @@ async def join(ctx):
         await ctx.send('присоединен на канал {}'.format(channel))
 
 
-@bot.command(name='молчи')
+@bot.command(name='цыц')
 async def voice_leave(ctx):
     guild = str(ctx.guild.id)
     if voice[guild].is_connected():
@@ -252,29 +301,43 @@ async def voice_leave(ctx):
 
 
 @bot.command(name='играй')
-async def voice_play(ctx):
+async def voice_play(ctx, query: str):
     guild = str(ctx.guild.id)
+    query0 = 'G:/GitHub/olenetron/audio/' + query
+    if ctx.author.voice and ctx.author.voice.channel:
+        if ctx.voice_client is None:
+            return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
+        else:
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query0))
+            ctx.voice_client.stop()
+            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+
+            await ctx.send('Играет: {}'.format(query))
+    else:
+        await ctx.send('Присоединитесь к голосовому каналу')
+
+
+@bot.command(name='ютуб')
+async def yt(ctx, url):
+    """Plays from a url (almost anything youtube_dl supports)"""
 
     if ctx.author.voice and ctx.author.voice.channel:
         if ctx.voice_client is None:
             return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
         else:
-            """await ctx.send('Проигрываю тест')
-            player = voice[guild].create_ffmpeg_player('test.mp3', after=lambda: print('done'))
-            player.start()
-            while not player.is_done():
-                await asyncio.sleep(1)
-            # disconnect after the player has finished
-            player.stop()
-            await ctx.send('Проверка звука окончена')"""
-
-            query = 'G:/GitHub/olenetron/test.mp3'
-            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
-
-            await ctx.send('Now playing: {}'.format(query))
+            async with ctx.typing():
+                player = await YTDLSource.from_url(url, loop=bot.loop)
+                ctx.voice_client.stop()
+                ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                await ctx.send('Играет: {}'.format(player.title))
     else:
         await ctx.send('Присоединитесь к голосовому каналу')
+
+
+@bot.command(name='молчи')
+async def voice_play(ctx):
+    ctx.voice_client.stop()
+    await ctx.send('Воспроизведение остановлено')
 
 
 @bot.command(name='олень')
