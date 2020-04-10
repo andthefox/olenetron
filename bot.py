@@ -74,6 +74,7 @@ bot.remove_command('help')
 time_var = {}
 timer_run = {}
 voice = {}
+player_queue = {}
 
 
 async def custom_help(ctx, command=''):
@@ -148,6 +149,15 @@ async def timer_routine(ctx, timer_var, message, idd):
     timer_run.pop(idd)
     await message.delete()
     await ctx.send('<@'+str(ctx.author.id)+'>' + ', таймер завершил отсчет!')
+
+'''
+async def player_routine(ctx, guild):
+    await bot.wait_until_ready()
+    
+    while not bot.is_closed() and player_queue[guild]:
+        await asyncio.sleep(1)
+
+'''
 
 
 @bot.event
@@ -288,10 +298,10 @@ async def join(ctx):
     #
     if ctx.voice_client is not None:
         await voice[guild].move_to(channel)
-        await ctx.send('перемещен на канал {}'.format(channel))
+        await ctx.send('Переместился на канал {}'.format(channel))
     else:
         voice[guild] = await channel.connect()
-        await ctx.send('присоединен на канал {}'.format(channel))
+        await ctx.send('Присоединяюсь к каналу {}'.format(channel))
 
 
 @bot.command(name='цыц')
@@ -301,8 +311,48 @@ async def voice_leave(ctx):
         await voice[guild].disconnect()
 
 
-@bot.command(name='играй')
-async def voice_play(ctx, query: str):
+@bot.command(name='плеер')
+async def voice_play(ctx, cmd: str = '', source: str = '', query: str = ''):
+    if cmd == 'играй':
+        if ctx.author.voice and ctx.author.voice.channel:
+            if ctx.voice_client is None:
+                return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
+            elif source != '':
+                if source == 'ютуб' and query != '':
+                    player = await YTDLSource.from_url(query, loop=bot.loop)
+                    saved_player = ctx.voice_client.pause()
+                    async with ctx.typing():
+                        ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                    await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
+                elif source == 'стрим' and query != '':
+                    player = await YTDLSource.from_url(query, loop=bot.loop, stream=True)
+                    saved_player = ctx.voice_client.pause()
+                    async with ctx.typing():
+                        ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                    await ctx.send('Воспроизвожу стрим с YouTube: {}'.format(player.title))
+                else:
+                    await ctx.send('Не могу найти источник аудио')
+            else:
+                await ctx.send('Неверно запрошено воспроизведение')
+        else:
+            await ctx.send('Присоединитесь к голосовому каналу')
+    elif cmd == 'стоп':
+        ctx.voice_client.stop()
+        await ctx.send('Воспроизведение остановлено')
+    elif cmd == 'пауза':
+        ctx.voice_client.pause()
+        await ctx.send('Воспроизведение приостановлено')
+    elif cmd == 'прод':
+        ctx.voice_client.resume()
+        await ctx.send('Воспроизведение продолжено')
+    elif cmd == 'громкость':
+        if source != '':
+            volume = int(source)
+            ctx.voice_client.source.volume = volume / 100
+            await ctx.send("Changed volume to {}%".format(volume))
+    else:
+        await ctx.send('Нет такой команды')
+"""
     guild = str(ctx.guild.id)
     query0 = 'G:/GitHub/olenetron/audio/' + query
     if ctx.author.voice and ctx.author.voice.channel:
@@ -316,29 +366,7 @@ async def voice_play(ctx, query: str):
             await ctx.send('Играет: {}'.format(query))
     else:
         await ctx.send('Присоединитесь к голосовому каналу')
-
-
-@bot.command(name='ютуб')
-async def yt(ctx, url):
-    """Plays from a url (almost anything youtube_dl supports)"""
-    await ctx.message.delete()
-    if ctx.author.voice and ctx.author.voice.channel:
-        if ctx.voice_client is None:
-            return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
-        else:
-            async with ctx.typing():
-                player = await YTDLSource.from_url(url, loop=bot.loop)
-                ctx.voice_client.stop()
-                ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                await ctx.send('Играет: {0} ({1}'.format(player.title, url))
-    else:
-        await ctx.send('Присоединитесь к голосовому каналу')
-
-
-@bot.command(name='молчи')
-async def voice_play(ctx):
-    ctx.voice_client.stop()
-    await ctx.send('Воспроизведение остановлено')
+"""
 
 
 @bot.command(name='олень')

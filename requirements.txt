@@ -5,3 +5,6 @@ wget
 delorean
 youtube-dl
 pynacl
+# tensorflow
+# numpy
+# pillow
