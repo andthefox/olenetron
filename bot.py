@@ -8,6 +8,7 @@ import asyncio
 import discord
 import wget
 import youtube_dl
+import requests
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -377,6 +378,23 @@ async def deer(ctx):
 @bot.command(name='пинг')
 async def ping(ctx):
     await ctx.send('🏓 Понг! {0} мс'.format(round(bot.latency*1000)))
+
+
+@bot.command(name='текст')
+async def porf_request(ctx, init: str = '', length: int = 30):
+    if init == '':
+        return await ctx.send('Введите текст запроса в кавычках')
+
+    url = 'https://models.dobro.ai/gpt2/medium/'
+    request = {
+        'prompt': init,
+        'length': length,
+        'num_samples': 1
+    }
+    message = await ctx.send('Ожидается ответ от сервера')
+    response = requests.post(url, json=request)
+    data = response.json()
+    await message.edit(content=init + str(data['replies'][0]))
 
 
 # @bot.command(name='create-channel')
