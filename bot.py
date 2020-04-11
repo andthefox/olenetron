@@ -391,10 +391,27 @@ async def porf_request(ctx, init: str = '', length: int = 30):
         'length': length,
         'num_samples': 1
     }
-    message = await ctx.send('Ожидается ответ от сервера')
-    response = requests.post(url, json=request)
-    data = response.json()
-    await message.edit(content=init + str(data['replies'][0]))
+    async with ctx.typing():
+        response = requests.post(url, json=request)
+        data = response.json()
+    await ctx.send(init + str(data['replies'][0]))
+
+
+@bot.command(name='вслух')
+async def porf_request(ctx, init: str = '', length: int = 30):
+    if init == '':
+        return await ctx.send('Введите текст запроса в кавычках')
+
+    url = 'https://models.dobro.ai/gpt2/medium/'
+    request = {
+        'prompt': init,
+        'length': length,
+        'num_samples': 1
+    }
+    async with ctx.typing():
+        response = requests.post(url, json=request)
+        data = response.json()
+    await ctx.send(init + str(data['replies'][0]), tts=True)
 
 
 # @bot.command(name='create-channel')
