@@ -1,4 +1,11 @@
 discord.py
+discord.py[voice]
 python-dotenv
 wget
 delorean
+youtube-dl
+pynacl
+requests
+# tensorflow
+# numpy
+# pillow
