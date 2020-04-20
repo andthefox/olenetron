@@ -96,7 +96,7 @@ async def custom_help(ctx, command=''):
         'голос': [' 🔊 Добавляет бота в Ваш голосовой канал', 'Добавляет бота в Ваш голосовой канал'],
         'цыц': [' 🔈 Бот покидает голосовой канал', 'Бот покидает голосовой канал'],
         'плеер': [' ▶ воспроизведение аудио. Подробно: `!как плеер`', 'Использование: !плеер \n \
-         `играй [ютуб|стрим] [ссылка/"поиск"]`, `стоп`, `пауза`, `прод`, `громкость [процент]`'],
+         `ютуб|стрим [ссылка/"поиск"]`, `файл [*.mp3/*.mp4]`,  `стоп`, `пауза`, `прод`, `громкость [процент]`'],
         'текст': [' 💬 Генератор теста из слова, фразы или предложения на базе https://porfirevich.ru/',\
                   '!текст [слова] <число слов на выходе>']
     }
@@ -319,30 +319,41 @@ async def voice_leave(ctx):
 
 
 @bot.command(name='плеер')
-async def voice_play(ctx, cmd: str = '', source: str = '', query: str = ''):
-    if cmd == 'играй':
+async def voice_play(ctx, cmd: str = '', source: str = ''):
+    if cmd == 'ютуб' or cmd == 'стрим' or cmd == 'файл':
         if ctx.author.voice and ctx.author.voice.channel:
             if ctx.voice_client is None:
                 return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
-            elif source != '':
-                if source == 'ютуб' and query != '':
-                    player = await YTDLSource.from_url(query, loop=bot.loop)
-                    saved_player = ctx.voice_client.pause()
-                    async with ctx.typing():
-                        ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                    await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
-                elif source == 'стрим' and query != '':
-                    player = await YTDLSource.from_url(query, loop=bot.loop, stream=True)
-                    saved_player = ctx.voice_client.pause()
-                    async with ctx.typing():
-                        ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                    await ctx.send('Воспроизвожу стрим с YouTube: {}'.format(player.title))
+            if cmd == 'ютуб' and source != '':
+                player = await YTDLSource.from_url(source, loop=bot.loop)
+                saved_player = ctx.voice_client.pause()
+                async with ctx.typing():
+                    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
+            elif cmd == 'стрим' and source != '':
+                player = await YTDLSource.from_url(source, loop=bot.loop, stream=True)
+                saved_player = ctx.voice_client.pause()
+                async with ctx.typing():
+                    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                await ctx.send('Воспроизвожу стрим с YouTube: {}'.format(player.title))
+            elif cmd == 'файл':
+                fn = None
+                if ctx.message.attachments:
+                    fn = ctx.message.attachments[0].filename[-4::]
+                if fn and (fn == '.mp3' or fn == '.mp4'):
+                    guild = str(ctx.guild.id)
+                    await ctx.message.attachments[0].save(str(guild) + fn)
+                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(str(guild) + fn))
+                    ctx.voice_client.stop()
+                    ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+                    await ctx.send('Играет пользовательский файл')
                 else:
-                    await ctx.send('Не могу найти источник аудио')
+                    await ctx.send('Отправьте файл в формате .mp3 или mp4')
             else:
-                await ctx.send('Неверно запрошено воспроизведение')
+                await ctx.send('Невозможно воспроизвести. Проверьте команду')
         else:
             await ctx.send('Присоединитесь к голосовому каналу')
+
     elif cmd == 'стоп':
         ctx.voice_client.stop()
         await ctx.send('Воспроизведение остановлено')
@@ -359,21 +370,6 @@ async def voice_play(ctx, cmd: str = '', source: str = '', query: str = ''):
             await ctx.send("Changed volume to {}%".format(volume))
     else:
         await ctx.send('Нет такой команды')
-"""
-    guild = str(ctx.guild.id)
-    query0 = 'G:/GitHub/olenetron/audio/' + query
-    if ctx.author.voice and ctx.author.voice.channel:
-        if ctx.voice_client is None:
-            return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
-        else:
-            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query0))
-            ctx.voice_client.stop()
-            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
-
-            await ctx.send('Играет: {}'.format(query))
-    else:
-        await ctx.send('Присоединитесь к голосовому каналу')
-"""
 
 
 @bot.command(name='олень')
