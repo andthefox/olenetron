@@ -98,7 +98,9 @@ async def custom_help(ctx, command=''):
         'плеер': [' ▶ воспроизведение аудио. Подробно: `!как плеер`', 'Использование: !плеер \n \
          `ютуб|стрим [ссылка/"поиск"]`, `файл [*.mp3/*.mp4]`,  `стоп`, `пауза`, `прод`, `громкость [процент]`'],
         'текст': [' 💬 Генератор теста из слова, фразы или предложения на базе https://porfirevich.ru/',\
-                  '!текст [слова] <число слов на выходе>']
+                  '!текст [слова] <число слов на выходе>'],
+        'дрим': [' 🖼 Обработать изображение с помощью deepdream', '\
+        Прикрепите к сообщению с командой изображение или ссылку']
     }
 
     if command == '':
@@ -415,6 +417,31 @@ async def porf_request(ctx, init: str = '', length: int = 30):
         data = response.json()
     await ctx.send(init + str(data['replies'][0]), tts=True)
 
+
+# dream --- make post request with url to another machine
+@bot.command(name='дрим')
+async def dream(ctx, url: str = None):
+    if url is not None:
+        img = url
+    elif ctx.message.attachments:
+        img = ctx.message.attachments[0].url
+    else:
+        return await ctx.send('Прикрепите изображение или отправьте ссылку вместе с командой')
+
+    async with ctx.typing():
+        r = requests.post(
+            "https://api.deepai.org/api/deepdream",
+            data={
+                'image': img,
+            },
+            headers={'api-key': '8c01fe27-dd5d-40d4-8a09-958e71ae438c'}
+        )
+        data = r.json()
+
+    if 'output_url' in data:
+        await ctx.send('Изображение обработано:\n ' + data['output_url'])
+    else:
+        await ctx.send('Ошибка:\n ' + data['status'])
 
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')

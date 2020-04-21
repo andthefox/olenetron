@@ -6,6 +6,8 @@ delorean
 youtube-dl
 pynacl
 requests
+pyOpenSSL
+boto3
 # tensorflow
 # numpy
 # pillow
