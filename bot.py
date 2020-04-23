@@ -158,8 +158,6 @@ timer_run = {}
 voice = {}
 player_queue = {}
 
-discord.opus.load_opus('libopus')
-
 
 async def custom_help(ctx, command=''):
     embed = discord.Embed(
@@ -573,19 +571,16 @@ async def say_it(ctx, text):
         return
     filename = str(ctx.guild.id)+'.opus'
     if ctx.author.voice and ctx.author.voice.channel:
-        async with ctx.typing():
-            with open(filename, "wb") as f:
-                # omazh, filipp
-                for audio_content in synthesize(text=text, voice='filipp', emotion='neutral'):
-                    f.write(audio_content)
-        # await ctx.send(file=discord.File(filename))
-            # source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename))
-            source = await discord.FFmpegOpusAudio.from_probe(filename, method='fallback')
-            print(source.is_opus())
-        print(discord.opus.is_loaded())
-        # source = discord.PCMVolumeTransformer(source)
-        # ctx.voice_client.stop()
-        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+        with open(filename, "wb") as f:
+            # omazh, filipp
+            for audio_content in synthesize(text=text, voice='filipp', emotion='neutral'):
+                f.write(audio_content)
+    # await ctx.send(file=discord.File(filename))
+    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename))
+    # source = await discord.FFmpegOpusAudio.from_probe(filename, method='fallback')
+    # source = discord.PCMVolumeTransformer(source)
+    ctx.voice_client.stop()
+    ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
 
 @bot.event
