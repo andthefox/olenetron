@@ -1,4 +1,4 @@
-#bot.py
+# bot.py
 # -*- coding: utf-8 -*-
 
 import os
@@ -43,18 +43,9 @@ def prepare_json_data():
     print(json.dumps(jsondata, indent=4))
 
 
-def modify_json_data(d, s=None, c=None):
+def modify_json_data():
     global jsondata
-    if c is None:
-        jsondata[d] = s
-
-    elif s is not None:
-        if d not in jsondata:
-            jsondata[d] = {}
-        jsondata[d][s] = c
-
     # print(json.dumps(jsondata, indent=4))
-
     with open('data.json', 'w') as output:
         json.dump(jsondata, output)
 
@@ -118,7 +109,7 @@ ytdl_format_options = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
 ffmpeg_options = {
@@ -156,7 +147,6 @@ bot.remove_command('help')
 time_var = {}
 timer_run = {}
 voice = {}
-player_queue = {}
 
 
 async def custom_help(ctx, command=''):
@@ -165,30 +155,30 @@ async def custom_help(ctx, command=''):
     )
 
     coms = {
-        'как/олень': [' 🦌 Выводит доступные команды или подробную информацию о команде', 'Выводит доступные команды или \
-        подробную информацию о команде'],
+        'как/олень': [' 🦌 Выводит доступные команды или подробную информацию о команде', 'Выводит доступные \
+команды или подробную информацию о команде'],
         'кинь': [' 🎲 Кидает кубики', 'Кинуть кубики *x* сторон *y* раз'],
         'переведи': [' 🔄 Перевод раскладки текста', 'Переводит текст в нужную раскладку'],
         'старт': [' ⏲ Запускает секундомер', 'Запускает секундомер'],
-        'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер\
-         и показывает результат'],
+        'стоп': [' ⏲ Останавливает секундомер и показывает результат', 'Останавливает секундомер \
+и показывает результат'],
         'таймер': [' ⏳ Запускает таймер', 'таймер `старт <число> <сек|мин|час>`, `стоп`'],
         'пинг': [' 🏓 Задержка бота', 'Время задержки ответа бота в миллисекундах'],
         'голос': [' 🔊 Добавляет бота в Ваш голосовой канал', 'Добавляет бота в Ваш голосовой канал'],
         'цыц': [' 🔈 Бот покидает голосовой канал', 'Бот покидает голосовой канал'],
-        'плеер': [' ▶ воспроизведение аудио. Подробно: `!как плеер`', 'Использование: !плеер \n \
-         `ютуб|стрим [ссылка/"поиск"]`, `файл [*.mp3/*.mp4]`,  `стоп`, `пауза`, `прод`, `громкость [процент]`'],
-        'текст': [' 💬 Генератор теста из слова, фразы или предложения на базе https://porfirevich.ru/',\
-                  '!текст [слова] <число слов на выходе>'],
+        'плеер': [' ▶ воспроизведение аудио. Подробно: `!как плеер`', 'Использование: !плеер \n\
+`ютуб|стрим [ссылка/"поиск"]`, `файл [*.mp3/*.mp4]`,  `стоп`, `пауза`, `прод`, `громкость [процент]`'],
+        'текст': [' 💬 Генератор теста из слова, фразы или предложения на базе https://porfirevich.ru/', '!\
+текст [слова] <число слов на выходе>'],
         'дрим': [' 🖼 Обработать изображение с помощью deepdream', '\
-        Прикрепите к сообщению с командой изображение или ссылку']
+Прикрепите к сообщению с командой изображение или ссылку']
     }
 
     if command == '':
         embed.set_author(name='Команды бота 🛠')
-        for key in coms:
-            value = coms[key]
-            embed.add_field(name='!'+key, value=value[0], inline=False)
+        for k in coms:
+            value = coms[k]
+            embed.add_field(name='!'+k, value=value[0], inline=False)
         embed.add_field(name='---', value='Кстати, боту можно писать и напрямую 😎', inline=False)
     else:
         embed.set_author(name='Поиск по команде 🔎')
@@ -200,36 +190,8 @@ async def custom_help(ctx, command=''):
     await ctx.send('', embed=embed)
 
 
-async def translate(ctx, sub_: str):
-    symbols_en = "qwertyuiop[]asdfghjkl;'zxcvbnm,./`"\
-                 'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'
-
-    symbols_ru = "йцукенгшщзхъфывапролджэячсмитьбю.ё"\
-                 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'
-    en = 0
-    ru = 0
-
-    if sub_:
-        for k in range(len(sub_)):
-            if sub_[k] in symbols_en:
-                en += 1
-            if sub_[k] in symbols_ru:
-                ru += 1
-
-        if en > ru:
-            layout = dict(zip(map(ord, symbols_en), symbols_ru))
-        else:
-            layout = dict(zip(map(ord, symbols_ru), symbols_en))
-
-        await ctx.send('<@' + str(ctx.message.author.id) + '>' + ', перевожу: \n```' + sub_ + ' \
-        -> ' + sub_.translate(layout) + '```')
-    else:
-        await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
-
-
 async def timer_routine(ctx, v, message, idd):
     await bot.wait_until_ready()
-    now = v-1
     while not bot.is_closed() and not timer_run[idd] is False:
         dt = Delorean()
         now = dt.epoch
@@ -253,6 +215,7 @@ async def player_routine(ctx, guild):
 
 '''
 
+
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Game(name=STATUS))
@@ -265,8 +228,31 @@ async def run_help(ctx, command=''):
 
 
 @bot.command(name='переведи')
-async def run_translate(ctx, sub_: str = ''):
-    await translate(ctx, sub_)
+async def run_translate(ctx, *, sub_):
+    symbols_en = "qwertyuiop[]asdfghjkl;'zxcvbnm,./`" \
+                 'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~&'
+
+    symbols_ru = "йцукенгшщзхъфывапролджэячсмитьбю.ё" \
+                 'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё?'
+    en = 0
+    ru = 0
+
+    if sub_:
+        for k in range(len(sub_)):
+            if sub_[k] in symbols_en:
+                en += 1
+            if sub_[k] in symbols_ru:
+                ru += 1
+
+        if en > ru:
+            layout = dict(zip(map(ord, symbols_en), symbols_ru))
+        else:
+            layout = dict(zip(map(ord, symbols_ru), symbols_en))
+
+        await ctx.send('<@' + str(ctx.message.author.id) + '>' + ', перевожу: \n```' + sub_ + ' \
+-> ' + sub_.translate(layout) + '```')
+    else:
+        await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
 
 
 @bot.command(name='кинь')
@@ -406,6 +392,62 @@ async def voice_leave(ctx):
         await voice[guild].disconnect()
 
 
+@bot.command(name='оч')
+async def add_to_queue(ctx, play_type, data):
+    global jsondata
+    # {server:id {user:name; type(youtube, file, text); data} }into json file
+    guild = str(ctx.guild.id)
+
+    if guild not in jsondata:
+        jsondata[guild] = {}
+
+    if 'queue' in jsondata[guild]:
+        voice_queue = jsondata[guild]['queue']
+    else:
+        voice_queue = []
+        jsondata[guild]['now_playing'] = -1
+
+    voice_queue.append({
+        'user': ctx.author.name,
+        'type': play_type,
+        'source': data
+    })
+
+    jsondata[guild]['queue'] = voice_queue
+    print(jsondata)
+    modify_json_data()
+    bot.loop.create_task(queue_routine(ctx))
+    # upload_json_data()
+
+
+async def queue_routine(ctx):
+    await bot.wait_until_ready()
+    guild = str(ctx.guild.id)
+    global jsondata
+
+    def updatejsondata():
+        global jsondata
+        now = jsondata[guild]['now_playing']
+        queue = jsondata[guild]['queue']
+        return queue[now]
+
+    while not bot.is_closed() and updatejsondata()['source']:
+        nowdata = updatejsondata()
+        if ctx.voice_client.is_playing() is False:
+            if nowdata['type'] == 'yt':
+                player = await YTDLSource.from_url(nowdata['source'], loop=bot.loop)
+                ctx.voice_client.pause()
+                async with ctx.typing():
+                    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
+            '''             
+            elif type_ == 'stream':
+            elif type_ == 'speak':
+            '''
+            jsondata[guild]['now_playing'] += 1
+        await asyncio.sleep(2)
+
+
 @bot.command(name='плеер')
 async def voice_play(ctx, cmd: str = '', source: str = ''):
     if cmd == 'ютуб' or cmd == 'стрим' or cmd == 'файл':
@@ -414,16 +456,17 @@ async def voice_play(ctx, cmd: str = '', source: str = ''):
                 return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
             if cmd == 'ютуб' and source != '':
                 player = await YTDLSource.from_url(source, loop=bot.loop)
-                saved_player = ctx.voice_client.pause()
+                ctx.voice_client.pause()
                 async with ctx.typing():
                     ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
                 await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
             elif cmd == 'стрим' and source != '':
                 player = await YTDLSource.from_url(source, loop=bot.loop, stream=True)
-                saved_player = ctx.voice_client.pause()
+                ctx.voice_client.pause()
                 async with ctx.typing():
                     ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
                 await ctx.send('Воспроизвожу стрим с YouTube: {}'.format(player.title))
+                '''    
             elif cmd == 'файл':
                 fn = None
                 if ctx.message.attachments:
@@ -437,6 +480,7 @@ async def voice_play(ctx, cmd: str = '', source: str = ''):
                     await ctx.send('Играет пользовательский файл')
                 else:
                     await ctx.send('Отправьте файл в формате .mp3 или mp4')
+                 '''
             else:
                 await ctx.send('Невозможно воспроизвести. Проверьте команду')
         else:
@@ -471,37 +515,20 @@ async def ping(ctx):
 
 
 @bot.command(name='текст')
-async def porf_request(ctx, init: str = '', length: int = 30):
-    if init == '':
+async def porf_request(ctx, *, init: str):
+    if not init:
         return await ctx.send('Введите текст запроса в кавычках')
 
     url = 'https://models.dobro.ai/gpt2/medium/'
     request = {
         'prompt': init,
-        'length': length,
+        'length': 60,
         'num_samples': 1
     }
     async with ctx.typing():
         response = requests.post(url, json=request)
         data = response.json()
     await ctx.send(init + str(data['replies'][0]))
-
-
-@bot.command(name='вслух')
-async def porf_request2(ctx, init: str = '', length: int = 30):
-    if init == '':
-        return await ctx.send('Введите текст запроса в кавычках')
-
-    url = 'https://models.dobro.ai/gpt2/medium/'
-    request = {
-        'prompt': init,
-        'length': length,
-        'num_samples': 1
-    }
-    async with ctx.typing():
-        response = requests.post(url, json=request)
-        data = response.json()
-    await ctx.send(init + str(data['replies'][0]), tts=True)
 
 
 # dream --- make post request with url to another machine
@@ -550,35 +577,37 @@ async def game(ctx, cmd: str = None):
         '''
             Идеи: ачивки, прозвища, рандом оружие и шмот, статы, баффы, прогрессбар, квесты, расширенный опыт в голосе
         '''
-        ctx.send('')
+        return await ctx.send('Игра в разработке')
     if cmd == 'старт':
         if 'users' not in jsondata:
             jsondata['users'] = {}
         if ident in jsondata['users']:
             return await ctx.send('Вы уже в игре! 🐉')
-
-        modify_json_data('users', ident, initial_values)
+        jsondata['users'][ident] = initial_values
+        modify_json_data()
         upload_json_data()
         return await ctx.send('Добро пожаловать в игру! 🧙‍♂️')
 
 
+async def voice_synthesis(text: str, filename):
+    with open(filename, "wb") as f:
+        # omazh, filipp
+        for audio_content in synthesize(text=text, voice='filipp', emotion='neutral'):
+            f.write(audio_content)
+    return discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename))
+
+
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
-
 @bot.command(name='скажи')
-async def say_it(ctx, text):
+async def say_it(ctx, *, text):
     if text is None:
         return
+    if ctx.voice_client is None:
+        return
+
     filename = str(ctx.guild.id)+'.opus'
-    if ctx.author.voice and ctx.author.voice.channel:
-        with open(filename, "wb") as f:
-            # omazh, filipp
-            for audio_content in synthesize(text=text, voice='filipp', emotion='neutral'):
-                f.write(audio_content)
-    # await ctx.send(file=discord.File(filename))
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename))
-    # source = await discord.FFmpegOpusAudio.from_probe(filename, method='fallback')
-    # source = discord.PCMVolumeTransformer(source)
+    source = await voice_synthesis(text, filename)
     ctx.voice_client.stop()
     ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
