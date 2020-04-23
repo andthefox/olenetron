@@ -8,6 +8,6 @@ pynacl
 requests
 pyOpenSSL
 boto3
+pillow
 # tensorflow
 # numpy
-# pillow

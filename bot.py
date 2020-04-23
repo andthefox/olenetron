@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import io
 import sys
 import random
 import asyncio
@@ -9,6 +10,9 @@ import discord
 import wget
 import youtube_dl
 import requests
+import boto3
+from PIL import Image
+import json
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -16,15 +20,92 @@ from delorean import Delorean
 from delorean import epoch
 from datetime import timedelta
 
-
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
 STATUS = '🦌 | !как'
 
+s3 = boto3.resource('s3')
+bucket = s3.Bucket(os.environ.get('S3_BUCKET_NAME'))
+jsondata = {}
+
+for key in bucket.objects.all():
+    print(key)
+
+json_object = bucket.Object('data.json')
+
+
+def prepare_json_data():
+    global json_object
+    json_object.download_file('data.json')
+    global jsondata
+    with open('data.json') as json_file:
+        jsondata = json.load(json_file)
+    print(json.dumps(jsondata, indent=4))
+
+
+def modify_json_data(d, s=None, c=None):
+    global jsondata
+    if c is None:
+        jsondata[d] = s
+
+    elif s is not None:
+        if d not in jsondata:
+            jsondata[d] = {}
+        jsondata[d][s] = c
+
+    # print(json.dumps(jsondata, indent=4))
+
+    with open('data.json', 'w') as output:
+        json.dump(jsondata, output)
+
+
+def upload_json_data():
+    global json_object
+    json_object.upload_file('data.json')
+
+
+def synthesize(text, ssml=False, apikey=os.environ.get('YANDEX_API_KEY'), emotion='good', voice='omazh'):
+    url = 'https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize'
+    headers = {
+        'Authorization': 'Api-Key ' + apikey,
+    }
+
+    data = {
+        'lang': 'ru-RU',
+        'emotion': emotion,
+        'voice': voice
+    }
+    if ssml is True:
+        data['ssml'] = text
+    else:
+        data['text'] = text
+
+    with requests.post(url, headers=headers, data=data, stream=True) as resp:
+        if resp.status_code != 200:
+            raise RuntimeError("Invalid response received: code: %d, message: %s" % (resp.status_code, resp.text))
+
+        for chunk in resp.iter_content(chunk_size=None):
+            yield chunk
+
+
+prepare_json_data()
+
+# putting objects
+'''
+data = open('693845376024707123.mp3', 'rb')
+bucket.put_object(Key='693845376024707123.mp3', Body=data)
+'''
+
+# loading images
+'''
+my_object = bucket.Object('693845376024707123.jpg')
+stream = io.BytesIO(my_object.get()['Body'].read())
+img = Image.open(stream)
+img.show()
+'''
 
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
-
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
@@ -76,6 +157,8 @@ time_var = {}
 timer_run = {}
 voice = {}
 player_queue = {}
+
+discord.opus.load_opus('libopus')
 
 
 async def custom_help(ctx, command=''):
@@ -146,12 +229,16 @@ async def translate(ctx, sub_: str):
         await ctx.send('Эта функция переводит текст в русскую раскладку. Текст вводится в кавычках')
 
 
-async def timer_routine(ctx, timer_var, message, idd):
+async def timer_routine(ctx, v, message, idd):
     await bot.wait_until_ready()
-
-    while not bot.is_closed() and not (timer_run[idd] is False or timer_var <= 0):
-        timer_var -= 1
-        time_left = timedelta(seconds=timer_var)
+    now = v-1
+    while not bot.is_closed() and not timer_run[idd] is False:
+        dt = Delorean()
+        now = dt.epoch
+        delta = v-now
+        if delta <= 0:
+            break
+        time_left = timedelta(seconds=delta)
         await message.edit(content='Осталось ' + str(time_left))
         await asyncio.sleep(1)
 
@@ -167,7 +254,6 @@ async def player_routine(ctx, guild):
         await asyncio.sleep(1)
 
 '''
-
 
 @bot.event
 async def on_ready():
@@ -265,9 +351,11 @@ async def timer_handler(ctx, funx: str = '', val: int = 5, dfn: str = 'мин'):
 
         if 0 < value <= 7200:
             if ident not in timer_run:
+                dt = Delorean()
                 response = '⏳ таймер запущен на ' + str(val) + ' ' + dfn + '. (' + str(value) + ' секунд)'
                 await ctx.send(response)
                 msg = await ctx.send('Осталось ...')
+                value = dt.epoch + value
                 bot.loop.create_task(timer_routine(ctx, value, msg, ident))
                 timer_run[ident] = True
                 # https://stackoverflow.com/questions/45824314/break-loop-with-command
@@ -402,7 +490,7 @@ async def porf_request(ctx, init: str = '', length: int = 30):
 
 
 @bot.command(name='вслух')
-async def porf_request(ctx, init: str = '', length: int = 30):
+async def porf_request2(ctx, init: str = '', length: int = 30):
     if init == '':
         return await ctx.send('Введите текст запроса в кавычках')
 
@@ -443,8 +531,61 @@ async def dream(ctx, url: str = None):
     else:
         await ctx.send('Ошибка:\n ' + data['status'])
 
+
+@bot.command(name='игра')
+async def game(ctx, cmd: str = None):
+    global jsondata
+    name = ctx.author.name
+    if ctx.guild:
+        guild = str(ctx.guild.id)
+    else:
+        guild = 'noguild'
+    ident = str(name + '@' + guild)
+
+    initial_values = {
+        'money': 10,
+        'hp': 100,
+        'xp': 1
+    }
+
+    if cmd is None:
+        '''
+            Идеи: ачивки, прозвища, рандом оружие и шмот, статы, баффы, прогрессбар, квесты, расширенный опыт в голосе
+        '''
+        ctx.send('')
+    if cmd == 'старт':
+        if 'users' not in jsondata:
+            jsondata['users'] = {}
+        if ident in jsondata['users']:
+            return await ctx.send('Вы уже в игре! 🐉')
+
+        modify_json_data('users', ident, initial_values)
+        upload_json_data()
+        return await ctx.send('Добро пожаловать в игру! 🧙‍♂️')
+
+
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
+
+@bot.command(name='скажи')
+async def say_it(ctx, text):
+    if text is None:
+        return
+    filename = str(ctx.guild.id)+'.opus'
+    if ctx.author.voice and ctx.author.voice.channel:
+        async with ctx.typing():
+            with open(filename, "wb") as f:
+                # omazh, filipp
+                for audio_content in synthesize(text=text, voice='filipp', emotion='neutral'):
+                    f.write(audio_content)
+        # await ctx.send(file=discord.File(filename))
+            # source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(filename))
+            source = await discord.FFmpegOpusAudio.from_probe(filename, method='fallback')
+            print(source.is_opus())
+        print(discord.opus.is_loaded())
+        # source = discord.PCMVolumeTransformer(source)
+        # ctx.voice_client.stop()
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
 
 @bot.event
