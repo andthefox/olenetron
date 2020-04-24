@@ -392,9 +392,9 @@ async def voice_leave(ctx):
         await voice[guild].disconnect()
 
 
-@bot.command(name='оч')
 async def add_to_queue(ctx, play_type, data):
     global jsondata
+    init_loop = False
     # {server:id {user:name; type(youtube, file, text); data} }into json file
     guild = str(ctx.guild.id)
 
@@ -405,7 +405,9 @@ async def add_to_queue(ctx, play_type, data):
         voice_queue = jsondata[guild]['queue']
     else:
         voice_queue = []
-        jsondata[guild]['now_playing'] = -1
+
+    if len(voice_queue) == 0:
+        init_loop = True
 
     voice_queue.append({
         'user': ctx.author.name,
@@ -414,9 +416,12 @@ async def add_to_queue(ctx, play_type, data):
     })
 
     jsondata[guild]['queue'] = voice_queue
-    print(jsondata)
+    # print(jsondata)
+
     modify_json_data()
-    bot.loop.create_task(queue_routine(ctx))
+
+    if init_loop is True:
+        bot.loop.create_task(queue_routine(ctx))
     # upload_json_data()
 
 
@@ -424,48 +429,40 @@ async def queue_routine(ctx):
     await bot.wait_until_ready()
     guild = str(ctx.guild.id)
     global jsondata
+    while not bot.is_closed() and jsondata[guild]['queue']:
+        if ctx.voice_client.is_playing() is False and ctx.voice_client.is_paused() is False:
+            source = jsondata[guild]['queue'][0]['source']
 
-    def updatejsondata():
-        global jsondata
-        now = jsondata[guild]['now_playing']
-        queue = jsondata[guild]['queue']
-        return queue[now]
-
-    while not bot.is_closed() and updatejsondata()['source']:
-        nowdata = updatejsondata()
-        if ctx.voice_client.is_playing() is False:
-            if nowdata['type'] == 'yt':
-                player = await YTDLSource.from_url(nowdata['source'], loop=bot.loop)
-                ctx.voice_client.pause()
-                async with ctx.typing():
-                    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-                await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
-            '''             
-            elif type_ == 'stream':
-            elif type_ == 'speak':
-            '''
-            jsondata[guild]['now_playing'] += 1
-        await asyncio.sleep(2)
-
-
-@bot.command(name='плеер')
-async def voice_play(ctx, cmd: str = '', source: str = ''):
-    if cmd == 'ютуб' or cmd == 'стрим' or cmd == 'файл':
-        if ctx.author.voice and ctx.author.voice.channel:
-            if ctx.voice_client is None:
-                return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
-            if cmd == 'ютуб' and source != '':
+            if jsondata[guild]['queue'][0]['type'] == 'yt':
                 player = await YTDLSource.from_url(source, loop=bot.loop)
                 ctx.voice_client.pause()
                 async with ctx.typing():
                     ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
                 await ctx.send('Играю аудио с YouTube: {}'.format(player.title))
-            elif cmd == 'стрим' and source != '':
+            elif jsondata[guild]['queue'][0]['type'] == 'stream':
                 player = await YTDLSource.from_url(source, loop=bot.loop, stream=True)
                 ctx.voice_client.pause()
                 async with ctx.typing():
                     ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
                 await ctx.send('Воспроизвожу стрим с YouTube: {}'.format(player.title))
+
+            del jsondata[guild]['queue'][0]
+        await asyncio.sleep(4)
+    modify_json_data()
+    await ctx.send('Это последний трек в очереди. Добавим ещё пару? 😉')
+
+
+@bot.command(name='плеер')
+async def voice_play(ctx, cmd: str = '', *, source: str = ''):
+    global jsondata
+    if cmd == 'ютуб' or cmd == 'стрим' or cmd == 'файл':
+        if ctx.author.voice and ctx.author.voice.channel:
+            if ctx.voice_client is None:
+                return await ctx.send('Присоедините меня к голосовому каналу командой `!голос`')
+            if cmd == 'ютуб' and source != '':
+                await add_to_queue(ctx, 'yt', source)
+            elif cmd == 'стрим' and source != '':
+                await add_to_queue(ctx, 'stream', source)
                 '''    
             elif cmd == 'файл':
                 fn = None
@@ -487,11 +484,16 @@ async def voice_play(ctx, cmd: str = '', source: str = ''):
             await ctx.send('Присоединитесь к голосовому каналу')
 
     elif cmd == 'стоп':
+        del jsondata[str(ctx.guild.id)]['queue']
+        modify_json_data()
         ctx.voice_client.stop()
         await ctx.send('Воспроизведение остановлено')
     elif cmd == 'пауза':
         ctx.voice_client.pause()
         await ctx.send('Воспроизведение приостановлено')
+    elif cmd == 'вперед' or cmd == 'вперёд' or cmd == 'след':
+        ctx.voice_client.stop()
+        # bot.loop.create_task(queue_routine(ctx))
     elif cmd == 'прод':
         ctx.voice_client.resume()
         await ctx.send('Воспроизведение продолжено')
