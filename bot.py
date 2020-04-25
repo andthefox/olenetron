@@ -644,6 +644,7 @@ async def voice_synthesis(text: str, filename):
 async def read_news(ctx, *, index: str = 'главное'):
     if ctx.voice_client is None:
         return await ctx.send('Присоедините меня к голосовому каналу')
+    feed = feedparser.parse("https://news.yandex.ru/index.rss")  # главное
 
     if index == '' or index == 'главное':
         feed = feedparser.parse("https://news.yandex.ru/index.rss")  # главное
@@ -655,11 +656,23 @@ async def read_news(ctx, *, index: str = 'главное'):
         feed = feedparser.parse("https://news.yandex.ru/world.rss")  # в мире
 
     full_text = ''
+    next_n = [
+        'Перейдём к следующей новости. - ',
+        'Далее. - ',
+        'Следующая новость. - ',
+        'Далее по списку. - ',
+        'К другим новостям. - '
+    ]
+    i = 0
     for entry in feed.entries[1:10]:
         summary = html.unescape(entry.summary)
         # f'Новость опубликована {str(entry.published)}.'
-        full_text += summary + '\n - '
-    cat = f'Озвучиваю новости из категории {index}.\n'
+        if i < 9:
+            full_text += f'{summary} {random.choice(next_n)} '
+        else:
+            full_text += f'{summary} Пока это все новости из данной категории. '
+        i += 1
+    cat = f'Озвучиваю новости из категории "{index}".\n'
     await say_it(ctx, text=cat + full_text)
     await ctx.send(cat)
 
