@@ -9,5 +9,6 @@ requests
 pyOpenSSL
 boto3
 pillow
+feedparser
 # tensorflow
 # numpy

@@ -13,6 +13,8 @@ import requests
 import boto3
 from PIL import Image
 import json
+import html
+import feedparser
 
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -470,7 +472,7 @@ error: %s' % e) if e else move_queue())
             if len(jsondata[guild]['queue']) == 1:
                 await ctx.send('Это последний трек в очереди. Может, добавим ещё пару? 😉')
             modify_json_data()
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
     if ctx.voice_client.is_playing() is False and ctx.voice_client.is_paused() is False:
         await ctx.send('Воспроизведение окончено')
@@ -636,7 +638,32 @@ async def voice_synthesis(text: str, filename):
 
 # @bot.command(name='create-channel')
 # @commands.has_role('admin')
-@bot.command(name='скажи')
+
+
+@bot.command(name='новости')
+async def read_news(ctx, *, index: str = 'главное'):
+    if ctx.voice_client is None:
+        return await ctx.send('Присоедините меня к голосовому каналу')
+
+    if index == '' or index == 'главное':
+        feed = feedparser.parse("https://news.yandex.ru/index.rss")  # главное
+    elif index == 'Москва' or index == 'москва':
+        feed = feedparser.parse("https://news.yandex.ru/Moscow/index.rss")  # Посква
+    elif index == 'Псков' or index == 'псков':
+        feed = feedparser.parse("https://news.yandex.ru/Pskov/index.rss")  # Псков
+    elif index == 'мир' or index == 'в мире':
+        feed = feedparser.parse("https://news.yandex.ru/world.rss")  # в мире
+
+    full_text = ''
+    for entry in feed.entries[1:10]:
+        summary = html.unescape(entry.summary)
+        # f'Новость опубликована {str(entry.published)}.'
+        full_text += summary + '\n - '
+    cat = f'Озвучиваю новости из категории {index}.\n'
+    await say_it(ctx, text=cat + full_text)
+    await ctx.send(cat)
+
+
 async def say_it(ctx, *, text):
     if text is None:
         return
@@ -645,8 +672,15 @@ async def say_it(ctx, *, text):
 
     filename = str(ctx.guild.id)+'.opus'
     source = await voice_synthesis(text, filename)
-    ctx.voice_client.stop()
-    ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+
+    if ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
+        while not bot.is_closed() and (ctx.voice_client.is_playing() or ctx.voice_client.is_paused()):
+            await asyncio.sleep(1)
+        ctx.voice_client.pause()
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
+    else:
+        ctx.voice_client.pause()
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else None)
 
 
 @bot.event
