@@ -664,7 +664,7 @@ async def read_news(ctx, *, index: str = 'главное'):
         'К другим новостям. - '
     ]
     i = 0
-    for entry in feed.entries[1:10]:
+    for entry in feed.entries[0:10]:
         summary = html.unescape(entry.summary)
         # f'Новость опубликована {str(entry.published)}.'
         if i < 9:
@@ -682,8 +682,8 @@ async def say_it(ctx, *, text):
         return
     if ctx.voice_client is None:
         return
-
-    filename = str(ctx.guild.id)+'.opus'
+    dt = Delorean()
+    filename = f'{dt.epoch}_{str(ctx.guild.id)}.opus'
     source = await voice_synthesis(text, filename)
 
     if ctx.voice_client.is_playing() and not ctx.voice_client.is_paused():
