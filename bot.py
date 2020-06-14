@@ -474,7 +474,7 @@ error: %s' % e) if e else move_queue())
             modify_json_data()
         await asyncio.sleep(1)
 
-    if ctx.voice_client.is_playing() is False and ctx.voice_client.is_paused() is False:
+    if not ctx.voice_client.is_playing() or ctx.voice_client.is_playing() is False and ctx.voice_client.is_paused() is False:
         await ctx.send('Воспроизведение окончено')
 
 
