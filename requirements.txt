@@ -3,7 +3,7 @@ discord.py[voice]
 python-dotenv
 wget
 delorean
-youtube-dl
+youtube_dl>=2020.6.6
 pynacl
 requests
 pyOpenSSL
